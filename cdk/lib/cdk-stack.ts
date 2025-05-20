@@ -923,7 +923,7 @@ export class CdkStack extends Stack {
       instanceType: 'ml.t3.medium',
       roleArn: sagemakerInstanceRole.roleArn,
       notebookInstanceName: Aws.STACK_NAME,
-      defaultCodeRepository: 'https://github.com/aws-samples/performance-testing-framework-for-apache-kafka/',
+      defaultCodeRepository: 'https://github.com/aws-samples/sample-apache-kafka-performance-testing-framework/',
       platformIdentifier: 'notebook-al2-v3'
     });
 
