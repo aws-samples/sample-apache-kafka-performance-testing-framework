@@ -1,0 +1,16 @@
+{
+  "name": "lambda-functions",
+  "version": "1.0.0",
+  "dependencies": {
+    "@aws-sdk/client-batch": "3.470.0",
+    "@aws-sdk/client-cloudwatch": "3.470.0",
+    "@aws-sdk/client-cloudwatch-logs": "3.470.0"
+  },
+  "devDependencies": {
+    "@types/node": "20.10.5",
+    "aws-cdk-lib": "2.115.0",
+    "constructs": "10.3.0",
+    "typescript": "5.0.4"
+  }
+}
+
