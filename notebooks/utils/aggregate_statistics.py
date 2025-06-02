@@ -134,11 +134,11 @@ def aggregate_cw_logs(producer_stats, consumer_stats, partitions, test_details=N
             try:
                 stats = throughput_stats[throughput]
                 
-                # Get consumer group information from test parameters
+                # Get consumer group information directly from test parameters
                 consumer_groups_count = 0
-                if 'consumer_groups' in test_params:
-                    # Count the number of consumer groups with size > 0
-                    consumer_groups_count = sum(1 for group in test_params['consumer_groups'] if group.get('size', 0) > 0)
+                if 'consumer_groups' in test_params and test_params['consumer_groups']:
+                    # Use the num_groups parameter directly from the last consumer group entry
+                    consumer_groups_count = test_params['consumer_groups'][-1].get('num_groups', 0)
                 
                 # Create cleaned parameters
                 cleaned_params = {
@@ -151,9 +151,9 @@ def aggregate_cw_logs(producer_stats, consumer_stats, partitions, test_details=N
                     'producer.security.protocol': test_params.get('producer', {}).get('security.protocol', 'PLAINTEXT'),
                     'producer.acks': test_params.get('producer', {}).get('acks', 'all'),
                     'producer.batch.size': test_params.get('producer', {}).get('batch.size', '262114'),
-                    'num_producers': len(stats),
+                    'num_producers': test_params.get('num_producers', [1])[0],
                     'num_brokers': cluster_props.get('num_brokers', 'N/A'),  
-                    'consumer_groups.num_groups': consumer_groups_count  
+                    'consumer_groups.num_groups': consumer_groups_count
                 }
                 
                 # Aggregate metrics
