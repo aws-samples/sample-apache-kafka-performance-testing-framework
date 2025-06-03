@@ -115,11 +115,16 @@ You can now start deploying the CDK stacks to create the resouces in your AWS ac
 cdk ls
 ```
 
-You can observe 4 CDK stacks: <br>
+You can observe 9 CDK stacks: <br>
 MSK-Perf-Test-VPC <br>
 MSK-Perf-Test-M7g-Large <br>
 MSK-Perf-Test-M7g-XLarge <br>
-MSK-Perf-Test-M7g-2XLarge
+MSK-Perf-Test-M7g-2XLarge <br>
+MSK-Perf-Test-M7g-2XLarge-PST (Provisioned Storage Throughput enabled at 312 MB/s) <br>
+MSK-Perf-Test-M7g-4XLarge <br>
+MSK-Perf-Test-M7g-4XLarge-PST (Provisioned Storage Throughput enabled at 625 MB/s) <br>
+MSK-Perf-Test-M7g-8XLarge <br>
+MSK-Perf-Test-M7g-8XLarge-PST (Provisioned Storage Throughput enabled at 1000 MB/s)
 
 ### 1. VPC Stack
 

@@ -66,7 +66,26 @@ new CdkStack(app, 'MSK-Perf-Test-M7g-XLarge', {
       volumeSize: 6000
     },
     encryptionInTransit: {
-      enableInCluster: true,
+      enableInCluster: false,
+      clientBroker: ClientBrokerEncryption.PLAINTEXT
+    },
+    kafkaVersion: KafkaVersion.V3_6_0
+  },
+});
+
+// M7g.2XLarge cluster configuration
+// You can change the InstanceType parameters, the kafka version, and the CDK stack name, to reflect your requirements:
+new CdkStack(app, 'MSK-Perf-Test-M7g-2XLarge', {
+  ...defaults,
+  vpc: vpc,
+  clusterProps: {
+    numberOfBrokerNodes: 1,
+    instanceType: InstanceType.of(InstanceClass.M7G, InstanceSize.XLARGE2),
+    ebsStorageInfo: {
+      volumeSize: 6000
+    },
+    encryptionInTransit: {
+      enableInCluster: false,
       clientBroker: ClientBrokerEncryption.PLAINTEXT
     },
     kafkaVersion: KafkaVersion.V3_6_0
@@ -75,7 +94,7 @@ new CdkStack(app, 'MSK-Perf-Test-M7g-XLarge', {
 
 // M7g.2XLarge cluster configuration with maximum provisioned storage throughput enabled
 // You can change the InstanceType parameters, the kafka version, and the CDK stack name, to reflect your requirements:
-new CdkStack(app, 'MSK-Perf-Test-M7g-2XLarge', {
+new CdkStack(app, 'MSK-Perf-Test-M7g-2XLarge-PST', {
   ...defaults,
   vpc: vpc,
   clusterProps: {
@@ -86,6 +105,71 @@ new CdkStack(app, 'MSK-Perf-Test-M7g-2XLarge', {
       provisionedThroughput: {
         enabled: true,
         volumeThroughput: 312
+      }
+    },
+    encryptionInTransit: {
+      enableInCluster: false,
+      clientBroker: ClientBrokerEncryption.PLAINTEXT
+    },
+    kafkaVersion: KafkaVersion.V3_6_0,
+  }
+});
+
+// M7g.4XLarge cluster configuration
+// You can change the InstanceType parameters, the kafka version, and the CDK stack name, to reflect your requirements:
+new CdkStack(app, 'MSK-Perf-Test-M7g-4XLarge', {
+  ...defaults,
+  vpc: vpc,
+  clusterProps: {
+    numberOfBrokerNodes: 1,
+    instanceType: InstanceType.of(InstanceClass.M7G, InstanceSize.XLARGE4),
+    ebsStorageInfo: {
+      volumeSize: 6000
+    },
+    encryptionInTransit: {
+      enableInCluster: false,
+      clientBroker: ClientBrokerEncryption.PLAINTEXT
+    },
+    kafkaVersion: KafkaVersion.V3_6_0
+  },
+});
+
+// M7g.4XLarge cluster configuration with maximum provisioned storage throughput enabled
+// You can change the InstanceType parameters, the kafka version, and the CDK stack name, to reflect your requirements:
+new CdkStack(app, 'MSK-Perf-Test-M7g-4XLarge-PST', {
+  ...defaults,
+  vpc: vpc,
+  clusterProps: {
+    numberOfBrokerNodes: 1,
+    instanceType: InstanceType.of(InstanceClass.M7G, InstanceSize.XLARGE4),
+    ebsStorageInfo: {
+      volumeSize: 6000,
+      provisionedThroughput: {
+        enabled: true,
+        volumeThroughput: 625
+      }
+    },
+    encryptionInTransit: {
+      enableInCluster: false,
+      clientBroker: ClientBrokerEncryption.PLAINTEXT
+    },
+    kafkaVersion: KafkaVersion.V3_6_0,
+  }
+});
+
+// M7g.8XLarge cluster configuration with maximum provisioned storage throughput enabled
+// You can change the InstanceType parameters, the kafka version, and the CDK stack name, to reflect your requirements:
+new CdkStack(app, 'MSK-Perf-Test-M7g-8XLarge-PST', {
+  ...defaults,
+  vpc: vpc,
+  clusterProps: {
+    numberOfBrokerNodes: 1,
+    instanceType: InstanceType.of(InstanceClass.M7G, InstanceSize.XLARGE8),
+    ebsStorageInfo: {
+      volumeSize: 6000,
+      provisionedThroughput: {
+        enabled: true,
+        volumeThroughput: 1000
       }
     },
     encryptionInTransit: {
