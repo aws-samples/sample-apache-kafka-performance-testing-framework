@@ -27,7 +27,7 @@ const app = new App();
 // Environment configuration - update with your AWS account and region
 const defaults: { 'env': Environment } = {
   env: {
-    account: '241578467732',  // Replace with your AWS account ID
+    account: '123456789012',  // Replace with your AWS account ID
     region: 'us-east-1'       // Replace with your target region
   }
 };
