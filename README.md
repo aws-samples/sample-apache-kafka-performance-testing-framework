@@ -63,10 +63,10 @@ You have to clone the remote repository to create a local copy on your developme
 
 ```bash
 # Clone the remote repository
-git clone https://github.com/aws-samples/apache-kafka-performance-testing-framework.git
+git clone https://github.com/aws-samples/sample-apache-kafka-performance-testing-framework.git 
 
 # Navigate to project directory
-cd apache-kafka-performance-testing-framework
+cd sample-apache-kafka-performance-testing-framework
 
 # Verify repository contents
 ls -la
@@ -202,7 +202,7 @@ In the Step Functions console, navigate to State machines, and select `{CDK-stac
 {
   "test_specification": {
     "parameters": {
-      "cluster_throughput_mb_per_sec": [ 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144, 156, 168, 180 ],
+      "cluster_throughput_mb_per_sec": [ 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144, 156, 168 ],
       "consumer_groups" : [ { "num_groups": 0, "size": 0 }, { "num_groups": 1, "size": 6 }, { "num_groups": 2, "size": 6 } ],
       "num_producers": [ 6 ],
       "client_props": [
@@ -222,7 +222,7 @@ In the Step Functions console, navigate to State machines, and select `{CDK-stac
 
 #### Test Framework Specification
 
-Using the test specification above, the workflow will execute 45 performance tests to measure put latency under varying throughput conditions. 
+Using the test specification above, the workflow will execute 42 performance tests to measure put latency under varying throughput conditions. 
 
 The test configuration is using the following parameters:
 - Producers:	6
@@ -230,7 +230,7 @@ The test configuration is using the following parameters:
 - Record Size:	1024 bytes
 - Replication Factor: 3
 - Duration:	3600 seconds (1 hour)
-- Throughput: 12 → 180 MB/sec
+- Throughput: 12 → 168 MB/sec
 - Consumer Groups:
   - 0 groups (no consumers)
   - 1 group (6 consumers)
@@ -239,16 +239,16 @@ The test configuration is using the following parameters:
 #### Test Execution Flow
 
 Phase 1: No consumer groups
-- Throughput: 16 → 88 MB/sec
+- Throughput: 16 → 168 MB/sec
 - Measure put latency
 
 Phase 2: One consumer group
-- Throughput: 16 → 88 MB/sec
+- Throughput: 16 → 168 MB/sec
 - 6 consumers active
 - Measure put latency
 
 Phase 3: Two consumer groups
-- Throughput: 16 → 88 MB/sec
+- Throughput: 16 → 168 MB/sec
 - 12 consumers total (6 per group)
 - Measure put latency
 
@@ -268,7 +268,7 @@ To automatically stop increasing throughput when the cluster becomes saturated, 
 {
   "test_specification": {
     "parameters": {
-      "cluster_throughput_mb_per_sec": [ 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144, 156, 168, 180 ],
+      "cluster_throughput_mb_per_sec": [ 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144, 156, 168 ],
       "consumer_groups" : [ { "num_groups": 0, "size": 0 }, { "num_groups": 1, "size": 6 }, { "num_groups": 2, "size": 6 } ],
       "num_producers": [ 6 ],
       "client_props": [
@@ -313,7 +313,7 @@ To obtain stable results for the baseline performance of a cluster, the test fra
 {
   "test_specification": {
     "parameters": {
-      "cluster_throughput_mb_per_sec": [ 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144, 156, 168, 180 ],
+      "cluster_throughput_mb_per_sec": [ 12, 24, 36, 48, 60, 72, 84, 96, 108, 120, 132, 144, 156, 168 ],
       "consumer_groups" : [ { "num_groups": 0, "size": 0 }, { "num_groups": 1, "size": 6 }, { "num_groups": 2, "size": 6 } ],
       "num_producers": [ 6 ],
       "client_props": [
@@ -396,8 +396,8 @@ To create a visualization for the performance test results:
 ### Advanced Visualization Configuration
 
 The logic in the Jupyter notebook:
-- Retrieves test results from CloudWatch Logs
-- Applies grouping and aggregations
+- Retrieves the performance test results from CloudWatch Logs for one or more state machines execution ARNs
+- Applies grouping and aggregations of the performance tests results
 - Creates grid-based visualizations where:
   - Tests in same row have identical producer/consumer settings
   - Tests in same column have identical consumer numbers
@@ -420,7 +420,23 @@ In this case, all diagrams in the same row will have identical producer and cons
 
 ## Environment Clean Up 
 
-`cdk destroy` will remove most resources again. It will retain a CloudWatch log streams that contain the experiment output to preserve the raw output of the performance tests for later visualization. These resources will continue to incur cost, unless they are manually deleted.
+To remove all CDK deployed resources for the performance test and avoid unnecessary AWS charges, follow these steps:
+
+1. Run the destroy command:
+   ```bash
+   cdk destroy {stack-name}
+   ```
+
+2. Important Notes:
+    - CloudWatch log streams containing experiment outputs will be retained. These logs are preserved for future analysis and visualization
+    - To completely eliminate all costs, manually delete the following:
+      - CloudWatch Log Groups
+      - Any remaining CloudWatch Log Streams
+      - Any manually created resources not managed by CDK
+
+3. Verify Cleanup:
+    - Check your AWS Console to ensure all resources are properly removed
+    - Pay special attention to regions where you deployed resources
 
 ## Security
 
