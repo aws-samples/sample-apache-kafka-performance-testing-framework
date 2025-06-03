@@ -319,7 +319,11 @@ def query_cw_logs(test_details, cloudwatch_logs):
                             result = {
                                 'test_params': {
                                     'topic': topic_info['topic'],
-                                    'target_throughput': topic_info['target_throughput']
+                                    'target_throughput': topic_info['target_throughput'],
+                                    # Add all test parameters from raw_test_result
+                                    **raw_test_result.get('test_parameters', {}),
+                                    # Add all cluster properties from raw_test_result
+                                    **raw_test_result.get('cluster_properties', {})
                                 },
                                 'timestamp': dateutil.parser.parse(timestamp),
                                 'test_results': {
@@ -358,7 +362,11 @@ def query_cw_logs(test_details, cloudwatch_logs):
                             consumer_result = {
                                 'test_params': {
                                     'topic': topic_info['topic'],
-                                    'target_throughput': topic_info['target_throughput']
+                                    'target_throughput': topic_info['target_throughput'],
+                                    # Add all test parameters from raw_test_result
+                                    **raw_test_result.get('test_parameters', {}),
+                                    # Add all cluster properties from raw_test_result
+                                    **raw_test_result.get('cluster_properties', {})
                                 },
                                 'timestamp': dateutil.parser.parse(timestamp),
                                 'test_results': {
@@ -397,7 +405,11 @@ def query_cw_logs(test_details, cloudwatch_logs):
                             timeout_info = {
                                 'test_params': {
                                     'topic': topic_info['topic'],
-                                    'target_throughput': topic_info['target_throughput']
+                                    'target_throughput': topic_info['target_throughput'],
+                                    # Add all test parameters from raw_test_result
+                                    **raw_test_result.get('test_parameters', {}),
+                                    # Add all cluster properties from raw_test_result
+                                    **raw_test_result.get('cluster_properties', {})
                                 },
                                 'timestamp': dateutil.parser.parse(timestamp),
                                 'timeout_info': {

@@ -87,27 +87,38 @@ def aggregate_cw_logs(producer_stats, consumer_stats, partitions, test_details=N
     # Print broker types
     print(f"Found broker types: {broker_types}")
     
-    # Split producer stats based on topic prefix
-    # Each test run has a different topic prefix (e.g., test-20558-series vs test-57542-series)
-    topic_prefixes = set()
+    # Extract unique broker types from producer stats
+    broker_types_in_stats = set()
     for stat in producer_stats:
-        topic = stat['test_params']['topic']
-        prefix = '-'.join(topic.split('-')[:3])  # Get the first three parts of the topic name
-        topic_prefixes.add(prefix)
+        broker_type = stat['test_params'].get('broker_type')
+        if broker_type:
+            broker_types_in_stats.add(broker_type)
     
-    # Print topic prefixes found
-    print(f"Found topic prefixes: {topic_prefixes}")
+    # Print broker types found in stats
+    print(f"Found broker types in stats: {broker_types_in_stats}")
     
-    # Map topic prefixes to broker types
-    prefix_to_broker = dict(zip(sorted(topic_prefixes), sorted(broker_types)))
-    print("Mapping topic prefixes to broker types:", prefix_to_broker)
+    # Create a mapping from topic prefixes to broker types for informational purposes
+    topic_prefix_to_broker = {}
+    for stat in producer_stats:
+        if 'topic' in stat['test_params'] and 'broker_type' in stat['test_params']:
+            topic = stat['test_params']['topic']
+            prefix = '-'.join(topic.split('-')[:3])
+            broker_type = stat['test_params']['broker_type']
+            if prefix not in topic_prefix_to_broker:
+                topic_prefix_to_broker[prefix] = broker_type
     
-    # Group producer stats by topic prefix first, then by throughput
+    # Print the mapping for informational purposes
+    print("Mapping topic prefixes to broker types:", topic_prefix_to_broker)
+    
+    # Group producer stats by broker_type directly, then by throughput
     execution_stats = {}
     for stat in producer_stats:
-        topic = stat['test_params']['topic']
-        prefix = '-'.join(topic.split('-')[:3])
-        broker_type = prefix_to_broker[prefix]
+        # Use broker_type directly from test_params
+        broker_type = stat['test_params'].get('broker_type')
+        
+        if not broker_type:
+            # Skip stats without broker_type
+            continue
         
         if broker_type not in execution_stats:
             execution_stats[broker_type] = {}
