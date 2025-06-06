@@ -17,18 +17,25 @@
 import sys
 import os
 import subprocess
-import pkg_resources 
+import importlib.metadata
 
 # Approved patterns for subprocess commands
 def validate_command_against_patterns(cmd):
     """Validates that a command matches one of our approved command patterns."""
     
-    # Define allowed command patterns - AWS CLI patterns removed
+    # Define allowed command patterns including AWS CLI installation patterns
     APPROVED_COMMAND_PATTERNS = [
         # Python/pip commands
         [sys.executable, "-m", "pip", "install", "--quiet", "PACKAGE"],
         [sys.executable, "-m", "pip", "uninstall", "-y", "--quiet", "PACKAGE"],
-        [sys.executable, "-m", "pip", "install", "--quiet", "--no-deps", "PACKAGE"]
+        [sys.executable, "-m", "pip", "install", "--quiet", "--no-deps", "PACKAGE"],
+        # AWS CLI installation commands
+        ["curl", "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip", "-o", "awscliv2.zip", "--silent", "--show-error"],
+        ["unzip", "-q", "-o", "awscliv2.zip"],
+        ["./aws/install", "--bin-dir", "PATH", "--install-dir", "PATH", "--update"],
+        ["rm", "-f", "awscliv2.zip"],
+        ["rm", "-rf", "aws"],
+        ["aws", "--version"]
     ]
     
     # Check command against each pattern
@@ -115,9 +122,9 @@ def pip_uninstall(package_name):
 # Check if a package is installed
 def is_package_installed(package_name):
     try:
-        pkg_resources.get_distribution(package_name)
+        importlib.metadata.version(package_name)
         return True
-    except pkg_resources.DistributionNotFound:
+    except importlib.metadata.PackageNotFoundError:
         return False
 
 # Installs required Python packages
@@ -162,37 +169,86 @@ def verify_installation():
                 print(f"❌ {package} installation verification failed")
     except Exception as e:
         print(f"Error during verification: {str(e)}")
-    
-# Verifies the installation of Python packages
-def verify_installation():
+
+# Upgrades AWS CLI to version 2 with user-level installation
+def upgrade_aws_cli():
     try:
-        print("\nVerifying installation:")
+        # Check if AWS CLI v2 is already installed
+        result = subprocess.run(['aws', '--version'], capture_output=True, text=True)
+        if 'aws-cli/2' in result.stdout:
+            print("AWS CLI v2 is already installed")
+            return True
+            
+        home = os.path.expanduser("~")
+        aws_cli_dir = os.path.join(home, '.aws-cli-v2')
+        bin_dir = os.path.join(home, 'bin')
         
-        # Verify Python packages
-        for package in ['boto3', 'numpy', 'matplotlib']:
-            if is_package_installed(package):
-                print(f"✅ {package} successfully installed")
-            else:
-                print(f"❌ {package} installation verification failed")
+        print("📦 Installing AWS CLI v2...")
+        
+        # Clean up any previous installation files
+        subprocess.run(['rm', '-f', 'awscliv2.zip'], check=False)
+        subprocess.run(['rm', '-rf', 'aws'], check=False)
+        
+        print("  ↳ Downloading installer...")
+        subprocess.check_call([
+            'curl',
+            'https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip',
+            '-o',
+            'awscliv2.zip',
+            '--silent',
+            '--show-error'
+        ])
+        
+        print("  ↳ Extracting files...")
+        subprocess.check_call(['unzip', '-q', '-o', 'awscliv2.zip'])
+        os.makedirs(bin_dir, exist_ok=True)
+        
+        print("  ↳ Installing AWS CLI v2...")
+        subprocess.check_call([
+            './aws/install',
+            '--bin-dir', bin_dir,
+            '--install-dir', aws_cli_dir,
+            '--update'
+        ])
+        
+        # Update PATH in current session
+        if bin_dir not in os.environ['PATH']:
+            os.environ['PATH'] = f"{bin_dir}:{os.environ['PATH']}"
+        
+        # Clean up
+        subprocess.check_call(['rm', '-f', 'awscliv2.zip'])
+        subprocess.check_call(['rm', '-rf', 'aws'])
+        
+        return True
     except Exception as e:
-        print(f"Error during verification: {str(e)}")
+        print(f"\n❌ Error during AWS CLI installation: {str(e)}")
+        return False
 
 # Main installation function
-def setup():
+def setup(upgrade_cli=True):
     print("🚀 Starting installation process...\n")
     
     if install_packages():
         print("\n✅ Package installation successful")
-        verify_installation()
-        
-        print("\n🎉 Installation complete!")
-        print("\n⚠️  IMPORTANT: Please restart your Jupyter kernel to ensure all changes take effect.")
-        print("\nNext steps:")
-        print("1. Restart the Jupyter kernel")
-        print("2. Open '02-create-visualization-template.ipynb'")
-        print("3. Follow the instructions to create your visualization templates")
     else:
         print("\n❌ Package installation failed")
+        return
+    
+    if upgrade_cli:
+        print("\n🔄 Upgrading AWS CLI to version 2...")
+        if upgrade_aws_cli():
+            print("\n✅ AWS CLI upgrade successful")
+        else:
+            print("\n❌ AWS CLI upgrade failed")
+    
+    verify_installation()
+    
+    print("\n🎉 Installation complete!")
+    print("\n⚠️  IMPORTANT: Please restart your Jupyter kernel to ensure all changes take effect.")
+    print("\nNext steps:")
+    print("1. Restart the Jupyter kernel")
+    print("2. Open '02-create-visualization-template.ipynb'")
+    print("3. Follow the instructions to create your visualization templates")
 
 if __name__ == "__main__":
     setup()
