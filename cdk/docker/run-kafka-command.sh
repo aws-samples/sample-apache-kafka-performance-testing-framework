@@ -210,7 +210,7 @@ create-topics)
                 --partitions $args[--num-partitions] \
                 --replication-factor $args[--replication-factor] \
                 --command-config /opt/client.properties \
-                --config retention.ms=21600000
+                --config retention.ms=86400000
             then
                 echo "Successfully created performance test topic"
                 break
