@@ -127,16 +127,32 @@ def plot_measurements(data, metric_line_style_names, ylabel,
                 # Create label with proper structure
                 broker_type = sorted_data[0]['test_params'].get('broker_type', 'N/A')
                 num_brokers = sorted_data[0]['test_params'].get('num_brokers', 'N/A')
+
+                cg = sorted_data[0]['test_params'].get('consumer_groups.num_groups')
+                
                 # Remove 'kafka.' prefix and use it to determine test number
                 simplified_broker_type = broker_type.replace('kafka.', '')
                 
                 # Set line style based on metric type
                 line_style = '--' if 'p99' in metric else '-'  # dashed for p99, solid for p50
                 
-                # Use color_idx + 1 as the test number since it changes with each broker type group
-                label = f"Test {color_idx + 1} - brokers: {num_brokers} - broker_type: {simplified_broker_type} - {metric}"
+                # Generate dynamic plot labels based on grouping criteria
+                label_metric = ''
 
-                # Plot line with different style for each test
+                # Special case: broker_type only grouping uses detailed format
+                if len(metric_color_keys) == 1 and metric_color_keys[0] == 'broker_type':
+                    label = f"Test {color_idx + 1} - brokers: {num_brokers} - broker_type: {simplified_broker_type} - {metric}"
+                else:
+                    # Multi-criteria grouping: build composite label with all metric keys
+                    for metric_color in metric_color_keys:
+                        if metric_color != '':
+                            label_metric = label_metric + f" - {metric_color}: {sorted_data[0]['test_params'].get(metric_color)}"
+                        else:
+                            label_metric = f"No defined metric key"
+                    # Create plot legend label with test configuration and metric
+                    label = f"Test {color_idx + 1} - brokers: {num_brokers} - broker_type: {simplified_broker_type}{label_metric} - {metric}"
+
+                # Plot line with test-specific styling
                 subplot.plot(x_values, y_values, 
                            label=label,
                            marker=markers[metric_idx % len(markers)],

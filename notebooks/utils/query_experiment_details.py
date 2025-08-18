@@ -262,7 +262,15 @@ def query_cw_logs(test_details, cloudwatch_logs):
             
             # Print comprehensive summary of all the different types of log entries found in the CloudWatch Logs query results
             print(f"Found {topic_count} topic entries, {producer_count} producer results, {consumer_count} consumer results, and {timeout_count} timeout errors")
-            
+
+            # Extract test prefix from Kafka topic name and store it in the test results
+            message = statistics_result[0].get('@message', '')
+            topic_match = re.search(r'--topic-name (test-\d+-series-\d+-t(\d+)-\S+)', message)
+            topic_name = topic_match.group(1)
+            prefix = '-'.join(topic_name.split('-')[:3])
+            print(f"The performance test prefix is: {prefix}")
+            raw_test_result["test_prefix"] = prefix
+
             # Create a map of log streams to topics
             log_stream_to_topic = {}
             for entry in statistics_result:
@@ -424,7 +432,7 @@ def query_cw_logs(test_details, cloudwatch_logs):
                         # Error handling     
                         except Exception as e:
                             print(f"Error processing timeout: {str(e)}")
-
+            
         # Create a set of topics with timeout errors
         topics_with_timeout_errors = set()
         for raw_test_result in test_details:
@@ -471,8 +479,8 @@ def query_cw_logs(test_details, cloudwatch_logs):
         # Print final results
         print(f"Retrieved {len(producer_stats)} producer stats and {len(consumer_stats)} consumer stats")
         
-        # Return both producer and consumer statistics
-        return (producer_stats, consumer_stats)
+        # Return producer stats, consumer stats, and enriched test details with prefixes
+        return (producer_stats, consumer_stats, test_details)
     
     # Error handling
     except Exception as e:

@@ -400,15 +400,12 @@ To create a visualization for the performance test results:
 
 ### Advanced Visualization Configuration
 
-The logic in the Jupyter notebook:
-- Retrieves the performance test results from CloudWatch Logs for one or more state machines execution ARNs
-- Applies grouping and aggregations of the performance tests results
-- Creates grid-based visualizations where:
-  - Tests in same row have identical producer/consumer settings
-  - Tests in same column have identical consumer numbers
-  - Different colors represent different broker configurations and partition numbers
+The Jupyter notebook processes test results in three steps:
+- **Data Collection**: Retrieves performance metrics from CloudWatch Logs using one or more Step Functions state machines execution ARNs
+- **Data Processing**: Groups and aggregates results based on test parameters
+- **Visualization**:  Generates comparative plots using a user-defined `partitions` variable
 
-You can adapt the grouping of different test runs by changing the `partitions` variable. By adapting `row_keys` and `column_keys` you can create a grid of diagrams and all meassurments within the same sub-diabram will have identical test settings for the specified keys.
+The `partitions` variable controls how test results are grouped and displayed. Here's a basic configuration example:
 
 ```python
 partitions = {
@@ -420,8 +417,53 @@ partitions = {
 }
 ```
 
-In this case, all diagrams in the same row will have identical producer and consumer settings. Within a column, all diagrams will have the same number of consumers. And withing a diagram, tests with different brokers and number of partitions will have different colors.
+To customize this configuration, assign test parameters to different visualization roles:
 
+Configuration Keys:
+- `ignore_keys`: Parameters to exclude from visualization
+- `title_keys`: Parameters shown in the first row of the plot title (cluster configuration)
+- `column_keys`: Parameters shown in the second row of the plot title (test conditions)
+- `row_keys`: Parameters to display in the third row of the plot title (test variations)
+- `metric_color_keys`: Parameters shown as different colored lines in the plot together with the metric choosen (comparison criteria)
+
+Available Parameters
+- `cluster_name`: Cluster name used in the test
+- `broker_type`: Broker instance type (e.g., kafka.m7g.large)
+- `kafka_version`: MSK cluster Kafka version (e.g. 3.6.0)
+- `broker_storage`: Provisioned broker storage in GB
+- `in_cluster_encryption`: MSK in-cluster encryption status (true/false)
+- `num_partitions`: Partition count
+- `producer.security.protocol`: Client-broker protocol type (e.g. SSL)
+- `producer.acks`: Producer acks configuration (e.g.: all)
+- `producer.batch.size`: Producer batch size
+- `num_producers`: Producer count
+- `num_brokers`: Broker count
+- `broker_storage.pt`: Storage provisioned throughput in MB/s
+
+#### Example Configurations:
+1. For comparing tests with different Consumer Groups and same MSK Cluster size and instance types
+
+```python
+partitions = {
+    'ignore_keys': ['topic_id', 'cluster_id', 'test_id', 'cluster_name'],
+    'title_keys': ['kafka_version','broker_storage','broker_type'],
+    'row_keys': ['producer.acks','producer.batch.size','num_partitions'],
+    'column_keys': ['num_producers','in_cluster_encryption','producer.security.protocol'],
+    'metric_color_keys': ['consumer_groups.num_groups']
+}
+```
+
+2. For comparing tests with different in-cluster encryption and client-broker protocols while keeping same MSK Cluster size and instance types
+
+```python
+partitions = {
+    'ignore_keys': ['topic_id', 'cluster_id', 'test_id', 'cluster_name'],
+    'title_keys': ['kafka_version','broker_storage','broker_type'],
+    'row_keys': ['producer.acks','producer.batch.size','num_partitions'],
+    'column_keys': ['num_producers','consumer_groups.num_groups'],
+    'metric_color_keys': ['in_cluster_encryption','producer.security.protocol']
+}
+```
 
 ## Environment Clean Up 
 

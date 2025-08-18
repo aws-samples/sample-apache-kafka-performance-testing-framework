@@ -66,7 +66,7 @@ def broker_type_to_num(broker_type):
     # Default handling
     return mapping.get(instance_family, 'n/a')
 
-# Main function sponsible for aggregating Kafka performance metrics from CloudWatch logs
+# Main function responsible for aggregating Kafka performance metrics from CloudWatch logs
 def aggregate_cw_logs(producer_stats, consumer_stats, partitions, test_details=None):
     producer_aggregated_stats = []
     consumer_aggregated_stats = []
@@ -80,62 +80,58 @@ def aggregate_cw_logs(producer_stats, consumer_stats, partitions, test_details=N
     # Print progress information
     print(f"\nStarting producer aggregation with {len(producer_stats)} records")
     
-    # Extract broker types from test details
-    broker_types = [detail.get('cluster_properties', {}).get('broker_type') 
+    # Extract cluster names from test details
+    cluster_names = [detail.get('cluster_properties', {}).get('cluster_name') 
                    for detail in test_details]
     
     # Print broker types
-    print(f"Found broker types: {broker_types}")
+    print(f"Found clusters: {cluster_names}")
     
-    # Extract unique broker types from producer stats
-    broker_types_in_stats = set()
-    for stat in producer_stats:
-        broker_type = stat['test_params'].get('broker_type')
-        if broker_type:
-            broker_types_in_stats.add(broker_type)
-    
-    # Print broker types found in stats
-    print(f"Found broker types in stats: {broker_types_in_stats}")
-    
-    # Create a mapping from topic prefixes to broker types for informational purposes
+    # Create a mapping from test prefixes to cluster names for informational purposes
     topic_prefix_to_broker = {}
+    tests = []
     for stat in producer_stats:
-        if 'topic' in stat['test_params'] and 'broker_type' in stat['test_params']:
+        if 'topic' in stat['test_params'] and 'cluster_name' in stat['test_params']:
             topic = stat['test_params']['topic']
             prefix = '-'.join(topic.split('-')[:3])
-            broker_type = stat['test_params']['broker_type']
+            cluster = stat['test_params']['cluster_name']
             if prefix not in topic_prefix_to_broker:
-                topic_prefix_to_broker[prefix] = broker_type
+                topic_prefix_to_broker[prefix] = cluster
+                tests.append(prefix)
     
     # Print the mapping for informational purposes
     print("Mapping topic prefixes to broker types:", topic_prefix_to_broker)
+    print(f"There are {len(tests)} tests and the list of all tests is: {tests}")
     
-    # Group producer stats by broker_type directly, then by throughput
+    # Group producer stats by test prefix, then by throughput for hierarchical aggregation
     execution_stats = {}
     for stat in producer_stats:
-        # Use broker_type directly from test_params
-        broker_type = stat['test_params'].get('broker_type')
-        
-        if not broker_type:
-            # Skip stats without broker_type
+        # Extract test prefix from topic name 
+        topic = stat['test_params']['topic']
+        prefix = '-'.join(topic.split('-')[:3])
+
+        # Skip stats without valid topic prefix
+        if not prefix:
             continue
-        
-        if broker_type not in execution_stats:
-            execution_stats[broker_type] = {}
-        
+
+        # Initialize prefix group if not exists
+        if prefix not in execution_stats:
+            execution_stats[prefix] = {}
+
+        # Group by target throughput within each test prefix
         target_throughput = stat['test_params']['target_throughput']
-        if target_throughput not in execution_stats[broker_type]:
-            execution_stats[broker_type][target_throughput] = []
-        execution_stats[broker_type][target_throughput].append(stat)
+        if target_throughput not in execution_stats[prefix]:
+            execution_stats[prefix][target_throughput] = []
+        execution_stats[prefix][target_throughput].append(stat)
     
-    # Process each broker type separately
-    for broker_type, throughput_stats in execution_stats.items():
-        print(f"\nProcessing broker type: {broker_type}")
+    # Process each test prefix separately
+    for prefix, throughput_stats in execution_stats.items():
+        print(f"\nProcessing topic: {prefix}")
         print(f"Detected target throughput values: {sorted(throughput_stats.keys())}")
         
-        # Get the test details for this broker type
+        # Get the test details for this topic
         detail = next((d for d in test_details 
-                      if d.get('cluster_properties', {}).get('broker_type') == broker_type), 
+                      if d.get('test_prefix', {}) == prefix), 
                      test_details[0])
         test_params = detail['test_parameters']
         cluster_props = detail['cluster_properties']
@@ -150,10 +146,17 @@ def aggregate_cw_logs(producer_stats, consumer_stats, partitions, test_details=N
                 if 'consumer_groups' in test_params and test_params['consumer_groups']:
                     # Use the num_groups parameter directly from the last consumer group entry
                     consumer_groups_count = test_params['consumer_groups'][-1].get('num_groups', 0)
-                
+
+                # Get the clean provisioned throughput value from cluster properties
+                broker_storage_pt = cluster_props.get('provisioned_throughput')
+                if broker_storage_pt != 0:
+                    # If different than 0, means provisioned throughput is configured
+                    broker_storage_pt = cluster_props.get('provisioned_throughput').get('VolumeThroughput')
+
                 # Create cleaned parameters
                 cleaned_params = {
-                    'broker_type': broker_type,  
+                    'cluster_name': cluster_props.get('cluster_name', 'unknown'),
+                    'broker_type': cluster_props.get('broker_type', 'unknown'),
                     'target_throughput': throughput,
                     'kafka_version': cluster_props.get('kafka_version', 'unknown'),
                     'broker_storage': cluster_props.get('broker_storage', 'unknown'),
@@ -164,7 +167,8 @@ def aggregate_cw_logs(producer_stats, consumer_stats, partitions, test_details=N
                     'producer.batch.size': test_params.get('producer', {}).get('batch.size', '262114'),
                     'num_producers': test_params.get('num_producers', [1])[0],
                     'num_brokers': cluster_props.get('num_brokers', 'N/A'),  
-                    'consumer_groups.num_groups': consumer_groups_count
+                    'consumer_groups.num_groups': consumer_groups_count,
+                    'broker_storage.pt': broker_storage_pt
                 }
                 
                 # Aggregate metrics
@@ -184,6 +188,7 @@ def aggregate_cw_logs(producer_stats, consumer_stats, partitions, test_details=N
                 
                 # Build the final aggregated results
                 producer_aggregated_stats.append({
+                    'test-prefix': prefix,
                     'test_params': cleaned_params,
                     'test_results': agg_test_results
                 })
