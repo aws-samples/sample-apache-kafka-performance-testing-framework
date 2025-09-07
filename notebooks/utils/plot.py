@@ -222,8 +222,8 @@ def plot_measurements(data, metric_line_style_names, ylabel,
     # Place legend at the bottom with proper spacing
     handles, labels = subplot.get_legend_handles_labels()
     fig.legend(handles, labels, 
-              loc='lower center', 
-              bbox_to_anchor=(0.5, 0.02),
+              loc='outside lower center', 
+              bbox_to_anchor=(0.5, -0.01),
               ncol=1,
               fontsize=12)
 
