@@ -153,6 +153,8 @@ def aggregate_cw_logs(producer_stats, consumer_stats, partitions, test_details=N
                     # If different than 0, means provisioned throughput is configured
                     broker_storage_pt = cluster_props.get('provisioned_throughput').get('VolumeThroughput')
 
+                #print(f"\nProducer TS: {test_params['client_props'][0].get('producer', {}).split('security.protocol=',1)[1]}")
+                
                 # Create cleaned parameters
                 cleaned_params = {
                     'cluster_name': cluster_props.get('cluster_name', 'unknown'),
@@ -162,9 +164,9 @@ def aggregate_cw_logs(producer_stats, consumer_stats, partitions, test_details=N
                     'broker_storage': cluster_props.get('broker_storage', 'unknown'),
                     'in_cluster_encryption': cluster_props.get('in_cluster_encryption', False),
                     'num_partitions': test_params.get('num_partitions', [1])[0],
-                    'producer.security.protocol': test_params.get('producer', {}).get('security.protocol', 'PLAINTEXT'),
-                    'producer.acks': test_params.get('producer', {}).get('acks', 'all'),
-                    'producer.batch.size': test_params.get('producer', {}).get('batch.size', '262114'),
+                    'producer.security.protocol': test_params['client_props'][0].get('producer', {}).split('security.protocol=',1)[1],
+                    'producer.acks': test_params['client_props'][0].get('producer', {}).split('acks=',1)[1].split(' ',1)[0],
+                    'producer.batch.size': test_params['client_props'][0].get('producer', {}).split('batch.size=',1)[1].split(' ',1)[0],
                     'num_producers': test_params.get('num_producers', [1])[0],
                     'num_brokers': cluster_props.get('num_brokers', 'N/A'),  
                     'consumer_groups.num_groups': consumer_groups_count,
