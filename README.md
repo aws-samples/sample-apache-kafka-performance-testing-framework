@@ -158,9 +158,9 @@ new CdkStack(app, 'MSK-Perf-Test-M7g-Large', {
     },
     encryptionInTransit: {
       enableInCluster: false,
-      clientBroker: ClientBrokerEncryption.PLAINTEXT
+      clientBroker: ClientBrokerEncryption.TLS_PLAINTEXT
     },
-    kafkaVersion: KafkaVersion.V3_6_0,
+    kafkaVersion: KafkaVersion.V3_8_X,
   },
 });
 ```
