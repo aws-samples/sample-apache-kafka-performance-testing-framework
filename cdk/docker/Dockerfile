@@ -1,4 +1,4 @@
-# Copyright 2024 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# Copyright 2025 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -13,11 +13,11 @@
 # IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# Use Alpine Linux as base image with explicit platform
-FROM --platform=linux/amd64 alpine:3.21
+# Use Amazon Corretto as base image 
+FROM --platform=linux/amd64 amazoncorretto:21-alpine
 
 # Build arguments
-ARG KAFKA_VERSION=3.6.0
+ARG KAFKA_VERSION=3.8.0
 ARG SCALA_VERSION=2.13
 ARG MSK_IAM_AUTH_VERSION=1.1.7
 
@@ -25,38 +25,27 @@ ARG MSK_IAM_AUTH_VERSION=1.1.7
 ENV KAFKA_VERSION=${KAFKA_VERSION} \
     SCALA_VERSION=${SCALA_VERSION} \
     MSK_IAM_AUTH_VERSION=${MSK_IAM_AUTH_VERSION} \
-    JAVA_HOME=/usr/lib/jvm/java-17-openjdk \
+    JAVA_HOME=/usr/lib/jvm/default-jvm \
     PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/kafka/bin \
     KAFKA_HOME=/opt/kafka \
-    JAVA_OPTS="-Xms512m -Xmx1g \
-               -XX:+UseG1GC \
-               -XX:MaxGCPauseMillis=20 \
-               -XX:InitiatingHeapOccupancyPercent=35 \
-               -XX:+ExitOnOutOfMemoryError \
-               -XX:+HeapDumpOnOutOfMemoryError \
-               -XX:HeapDumpPath=/opt/kafka/logs/ \
+    JAVA_OPTS="-Xms1g -Xmx4g \
                -XX:+UseContainerSupport \
-               -XX:MaxRAMPercentage=75.0"
+               -XX:+ExitOnOutOfMemoryError \
+               -Dcom.sun.net.ssl.checkRevocation=false \
+               -Djava.security.properties=/opt/kafka/config/java.security"
 
 # Install system dependencies
 RUN apk update && \
     apk add --no-cache \
-        busybox \
-        coreutils \
         shadow \
         curl \
         tar \
         bash \
         zsh \
-        openjdk17 \
         aws-cli \
-        gzip \
-        procps \
         jq \
         ca-certificates \
-        tzdata \
-        mawk \
-        dos2unix
+        openssl
 
 # Setup Kafka user and directories
 RUN groupadd -r kafka && \
@@ -65,22 +54,36 @@ RUN groupadd -r kafka && \
 
 # Download and setup Kafka
 RUN cd /opt && \
-    curl -fSL "https://archive.apache.org/dist/kafka/${KAFKA_VERSION}/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz" -o kafka.tgz && \
+    curl -fSL "https://downloads.apache.org/kafka/${KAFKA_VERSION}/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz" -o kafka.tgz && \
     tar xzf kafka.tgz && \
     cp -r kafka_${SCALA_VERSION}-${KAFKA_VERSION}/* ${KAFKA_HOME}/ && \
     rm -rf kafka.tgz kafka_${SCALA_VERSION}-${KAFKA_VERSION}
 
-# Download MSK IAM auth jar and setup SSL
+# Download MSK IAM auth jar and setup SSL truststore
 RUN curl -fSL "https://github.com/aws/aws-msk-iam-auth/releases/download/v${MSK_IAM_AUTH_VERSION}/aws-msk-iam-auth-${MSK_IAM_AUTH_VERSION}-all.jar" \
         -o ${KAFKA_HOME}/libs/aws-msk-iam-auth.jar && \
-    cp /etc/ssl/certs/java/cacerts ${KAFKA_HOME}/kafka.client.truststore.jks || true
+    # Create truststore from system cacerts (matching original GitHub version)
+    cp ${JAVA_HOME}/lib/security/cacerts /opt/kafka.client.truststore.jks && \
+    # Create custom Java security properties to optimize SSL performance
+    mkdir -p ${KAFKA_HOME}/config && \
+    echo 'jdk.tls.disabledAlgorithms=SSLv3, RC4, DES, MD5withRSA, TLSv1, TLSv1.1' > ${KAFKA_HOME}/config/java.security && \
+    echo 'networkaddress.cache.ttl=60' >> ${KAFKA_HOME}/config/java.security && \
+    echo 'networkaddress.cache.negative.ttl=10' >> ${KAFKA_HOME}/config/java.security && \
+    echo 'jdk.tls.ephemeralDHKeySize=2048' >> ${KAFKA_HOME}/config/java.security && \
+    echo 'jdk.tls.rejectClientInitiatedRenegotiation=true' >> ${KAFKA_HOME}/config/java.security
 
-# Copy and setup the script
+# Copy properties files and script configuration
+COPY client-tls.properties /opt/
+COPY client-iam.properties /opt/
 COPY run-kafka-command.sh /opt/kafka/bin/
 RUN set -ex && \
     chmod 755 /opt/kafka/bin/run-kafka-command.sh && \
     chown kafka:kafka /opt/kafka/bin/run-kafka-command.sh && \
-    dos2unix /opt/kafka/bin/run-kafka-command.sh && \
+    # Set permissions for client properties files and /opt directory
+    chown kafka:kafka /opt/client-tls.properties /opt/client-iam.properties && \
+    chmod 755 /opt && chown kafka:kafka /opt && \
+    # Convert line endings 
+    sed -i 's/\r$//' /opt/kafka/bin/run-kafka-command.sh && \
     sed -i '1c#!/bin/zsh' /opt/kafka/bin/run-kafka-command.sh && \
     # Create debug script
     echo '#!/bin/sh' > /opt/kafka/bin/debug.sh && \
@@ -88,24 +91,6 @@ RUN set -ex && \
     # Set permissions
     chmod 755 /opt/kafka/bin/*.sh && \
     chown -R kafka:kafka ${KAFKA_HOME}
-
-# Setup client properties
-RUN for file in client.properties client-iam.properties client-tls.properties; do \
-    touch /opt/$file && \
-    chown kafka:kafka /opt/$file; \
-    done
-
-# Create startup verification script
-RUN echo '#!/bin/sh' > /opt/kafka/bin/startup-check.sh && \
-    echo 'echo "Current directory: $(pwd)"' >> /opt/kafka/bin/startup-check.sh && \
-    echo 'echo "Contents of /opt/kafka/bin:"' >> /opt/kafka/bin/startup-check.sh && \
-    echo 'ls -la /opt/kafka/bin/' >> /opt/kafka/bin/startup-check.sh && \
-    echo 'echo "Script contents:"' >> /opt/kafka/bin/startup-check.sh && \
-    echo 'cat /opt/kafka/bin/run-kafka-command.sh' >> /opt/kafka/bin/startup-check.sh && \
-    echo 'echo "Environment:"' >> /opt/kafka/bin/startup-check.sh && \
-    echo 'env' >> /opt/kafka/bin/startup-check.sh && \
-    chmod 755 /opt/kafka/bin/startup-check.sh && \
-    chown kafka:kafka /opt/kafka/bin/startup-check.sh
 
 # Set working directory and user
 WORKDIR ${KAFKA_HOME}
