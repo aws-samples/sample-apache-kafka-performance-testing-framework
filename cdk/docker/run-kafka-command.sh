@@ -19,6 +19,9 @@
 set -eo pipefail
 setopt shwordsplit
 
+# Set Kafka heap options globally
+export KAFKA_HEAP_OPTS="-Xms1G -Xmx4g"
+
 # Signal handler function
 signal_handler() {
     echo "trap triggered by signal $1"
@@ -56,7 +59,7 @@ wait_for_all_tasks() {
 
 # Kafka producer performance test command
 producer_command() {
-    KAFKA_HEAP_OPTS="-Xms1G -Xmx3584m" ${KAFKA_HOME}/bin/kafka-producer-perf-test.sh \
+    ${KAFKA_HOME}/bin/kafka-producer-perf-test.sh \
         --topic $TOPIC \
         --num-records $(printf '%.0f' $args[--num-records-producer]) \
         --throughput $THROUGHPUT \
@@ -77,7 +80,7 @@ consumer_command() {
 
     cat /opt/client.properties
 
-    KAFKA_HEAP_OPTS="-Xms1G -Xmx3584m" ${KAFKA_HOME}/bin/kafka-consumer-perf-test.sh \
+    ${KAFKA_HOME}/bin/kafka-consumer-perf-test.sh \
         --topic $TOPIC \
         --messages $(printf '%.0f' $args[--num-records-consumer]) \
         --broker-list $CONSUMER_BOOTSTRAP_SERVERS \
