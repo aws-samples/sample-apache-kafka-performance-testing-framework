@@ -48,9 +48,9 @@ new CdkStack(app, 'MSK-Perf-Test-M7g-Large', {
     },
     encryptionInTransit: {
       enableInCluster: false,
-      clientBroker: ClientBrokerEncryption.PLAINTEXT
+      clientBroker: ClientBrokerEncryption.TLS_PLAINTEXT
     },
-    kafkaVersion: KafkaVersion.V3_6_0,
+    kafkaVersion: KafkaVersion.V3_8_X,
   },
 });
 
@@ -67,9 +67,9 @@ new CdkStack(app, 'MSK-Perf-Test-M7g-XLarge', {
     },
     encryptionInTransit: {
       enableInCluster: false,
-      clientBroker: ClientBrokerEncryption.PLAINTEXT
+      clientBroker: ClientBrokerEncryption.TLS_PLAINTEXT
     },
-    kafkaVersion: KafkaVersion.V3_6_0
+    kafkaVersion: KafkaVersion.V3_8_X
   },
 });
 
@@ -86,9 +86,9 @@ new CdkStack(app, 'MSK-Perf-Test-M7g-2XLarge', {
     },
     encryptionInTransit: {
       enableInCluster: false,
-      clientBroker: ClientBrokerEncryption.PLAINTEXT
+      clientBroker: ClientBrokerEncryption.TLS_PLAINTEXT
     },
-    kafkaVersion: KafkaVersion.V3_6_0
+    kafkaVersion: KafkaVersion.V3_8_X
   },
 });
 
@@ -109,9 +109,9 @@ new CdkStack(app, 'MSK-Perf-Test-M7g-2XLarge-PST', {
     },
     encryptionInTransit: {
       enableInCluster: false,
-      clientBroker: ClientBrokerEncryption.PLAINTEXT
+      clientBroker: ClientBrokerEncryption.TLS_PLAINTEXT
     },
-    kafkaVersion: KafkaVersion.V3_6_0,
+    kafkaVersion: KafkaVersion.V3_8_X,
   }
 });
 
@@ -128,9 +128,9 @@ new CdkStack(app, 'MSK-Perf-Test-M7g-4XLarge', {
     },
     encryptionInTransit: {
       enableInCluster: false,
-      clientBroker: ClientBrokerEncryption.PLAINTEXT
+      clientBroker: ClientBrokerEncryption.TLS_PLAINTEXT
     },
-    kafkaVersion: KafkaVersion.V3_6_0
+    kafkaVersion: KafkaVersion.V3_8_X
   },
 });
 
@@ -151,10 +151,29 @@ new CdkStack(app, 'MSK-Perf-Test-M7g-4XLarge-PST', {
     },
     encryptionInTransit: {
       enableInCluster: false,
-      clientBroker: ClientBrokerEncryption.PLAINTEXT
+      clientBroker: ClientBrokerEncryption.TLS_PLAINTEXT
     },
-    kafkaVersion: KafkaVersion.V3_6_0,
+    kafkaVersion: KafkaVersion.V3_8_X,
   }
+});
+
+// M7g.8XLarge cluster configuration
+// You can change the InstanceType parameters, the kafka version, and the CDK stack name, to reflect your requirements:
+new CdkStack(app, 'MSK-Perf-Test-M7g-8XLarge', {
+  ...defaults,
+  vpc: vpc,
+  clusterProps: {
+    numberOfBrokerNodes: 1,
+    instanceType: InstanceType.of(InstanceClass.M7G, InstanceSize.XLARGE8),
+    ebsStorageInfo: {
+      volumeSize: 6000
+    },
+    encryptionInTransit: {
+      enableInCluster: false,
+      clientBroker: ClientBrokerEncryption.TLS_PLAINTEXT
+    },
+    kafkaVersion: KafkaVersion.V3_8_X
+  },
 });
 
 // M7g.8XLarge cluster configuration with maximum provisioned storage throughput enabled
@@ -174,8 +193,8 @@ new CdkStack(app, 'MSK-Perf-Test-M7g-8XLarge-PST', {
     },
     encryptionInTransit: {
       enableInCluster: false,
-      clientBroker: ClientBrokerEncryption.PLAINTEXT
+      clientBroker: ClientBrokerEncryption.TLS_PLAINTEXT
     },
-    kafkaVersion: KafkaVersion.V3_6_0,
+    kafkaVersion: KafkaVersion.V3_8_X,
   }
 });
